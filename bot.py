@@ -89,19 +89,19 @@ class Onchain:
             return True
 
         return False
-    
+
     def read_data(self,index=None):
         opento = open("data","r").read().splitlines()
         if index is not None:
             return opento[index]
-        
+
         return opento
 
     def read_token(self,index=None):
         opento = open("token","r").read().splitlines()
         if index is not None:
             return opento[index]
-        
+
         return opento
 
     def main(self):
@@ -116,7 +116,7 @@ class Onchain:
         if len(sys.argv) <= 1:
             os.system("cls" if os.name == "nt" else "clear")
         print(banner)
-        
+
         if not os.path.exists("data"):
             self.log(f"{merah}'data' file is not found !")
             open("data", "a")
@@ -125,32 +125,32 @@ class Onchain:
         if len(data) <= 0:
             self.log(f"{kuning}please fill 'data' file with your telegram data !")
             sys.exit()
-            
+
         data = self.read_data(0)
 
         if not os.path.exists("token"):
             self.log(f"{kuning}token file is not found !")
             open("token", "a")
-            
+
         ua = open('user-agent','r').read().splitlines()[0]
         if ua.find('#') >= 0:
             self.log(f"{kuning}please, fill your user-agent to user-agent file !")
             sys.exit()
-        
+
         self.headers['user-agent'] = ua
 
         token = self.read_token()
         if len(token) <= 0:
             self.login(data)
             token = self.read_token(0)
-        
+
         token = self.read_token(0)
 
         if self.is_expired(token):
             self.log(f'{kuning}token is expired !')
             self.login(data)
             token = self.read_token(0)
-        
+
         config = json.loads(open("config.json").read())
         interval = config["interval"]
         sleep = config["sleep"]
@@ -193,6 +193,8 @@ class Onchain:
         self.log(
             f"{merah}failed fetch data info !, http status code : {kuning}{res.status_code}"
         )
+        if res.status_code == 429:
+            self.countdown(30 * 60)
         return False
 
     def click(self, token: str, cfg: ConfigModel):
@@ -210,7 +212,7 @@ class Onchain:
             self.log(f"{kuning}Insufficient energy")
             self.countdown(cfg.sleep)
             return True
-        
+
         if '"clicks"' in res.text:
             clicks = res.json()["clicks"]
             energy = res.json()["energy"]
@@ -232,10 +234,12 @@ class Onchain:
                 self.countdown(cfg.sleep)
 
             return True
-        
+
         self.log(
             f"{merah}failed to click, http status code : {kuning}{res.status_code}"
         )
+        if res.status_code == 429:
+            self.countdown(30 * 60)
         return False
 
     def login(self, data):
@@ -255,6 +259,8 @@ class Onchain:
             self.log(
                 f"{merah}failed login with http status code : {kuning}{res.status_code}"
             )
+            if res.status_code == 429:
+                self.countdown(30 * 60)
             self.log(f"{kuning}trying login again !")
             continue
 
